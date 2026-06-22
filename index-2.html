@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Mindling — a mind you raise from scratch</title>
+<meta name="description" content="Mindling is a tiny character-level neural network you raise by talking to it. It starts as noise and learns to speak — from your words alone. Runs entirely in your browser." />
+<meta property="og:title" content="Mindling — a mind you raise from scratch" />
+<meta property="og:description" content="A real neural network you raise from an egg. Feed it your words and watch it learn to speak. Lives entirely in your browser." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#e7d2a3" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#e6d6b6; --paper2:#d6c293; --ink:#2b2a26; --shell:#f3e3bf; --shell2:#e7d2a3;
+    --rim:#b7975f; --screen:#d7ecd6; --screen2:#c2e1c6; --screenrim:#8a9a7e;
+    --coral:#e8743b; --teal:#5c7e76; --muted:#8a7a52;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    background:radial-gradient(130% 120% at 25% 0%, #efe6d2 0%, var(--paper) 55%, var(--paper2) 100%);
+    color:var(--ink); font-family:ui-rounded,'Segoe UI',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5; min-height:100vh;
+  }
+  header.site{text-align:center;padding:34px 18px 8px;}
+  .wordmark{font-family:'Silkscreen',monospace;font-size:20px;letter-spacing:2px;color:#7a5e2a;margin:0;}
+  .tagline{font-family:'VT323',monospace;font-size:21px;color:#6b7a5f;margin:4px 0 0;}
+  main{max-width:760px;margin:0 auto;padding:8px 18px 60px;}
+
+  /* device */
+  .hero{display:flex;justify-content:center;padding:18px 0 6px;}
+  .device{width:344px;max-width:100%;background:linear-gradient(160deg,var(--shell),var(--shell2));
+    border-radius:34px;padding:20px 20px 24px;border:2px solid var(--rim);
+    box-shadow:0 2px 0 #fff7e4 inset,0 18px 36px rgba(80,60,20,.32),0 -10px 20px rgba(255,255,255,.45) inset;}
+  .plate{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+  .plate b{font-family:'Silkscreen',monospace;font-size:12px;letter-spacing:1px;color:#7a5e2a;}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--coral);box-shadow:0 0 7px var(--coral);}
+  .screen{position:relative;background:linear-gradient(180deg,var(--screen),var(--screen2));border-radius:16px;
+    border:3px solid var(--screenrim);box-shadow:0 3px 8px rgba(40,60,40,.25) inset;padding:11px;overflow:hidden;}
+  .scan{position:absolute;inset:0;pointer-events:none;opacity:.5;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.05) 0 2px,transparent 2px 4px);}
+  .stagebar{font-family:'VT323',monospace;font-size:17px;color:#3c5b46;display:flex;justify-content:space-between;line-height:1;}
+  canvas#pet{image-rendering:pixelated;width:200px;height:200px;display:block;margin:2px auto 0;}
+  .bubble{font-family:'VT323',monospace;font-size:19px;line-height:1.05;color:#23341f;background:#eef7ea;
+    border:2px solid var(--screenrim);border-radius:10px;padding:7px 9px;min-height:46px;word-break:break-word;position:relative;}
+  .bubble:after{content:'';position:absolute;left:24px;bottom:-9px;border:8px solid transparent;border-top-color:var(--screenrim);}
+  .vit{margin-top:13px;display:grid;gap:10px;}
+  .cap{font-size:10px;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+  .meter{height:11px;background:#cdbf9c;border-radius:6px;overflow:hidden;border:1px solid var(--rim);}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--coral),#f0a35e);transition:width .4s ease;}
+  .freq{display:flex;align-items:flex-end;gap:2px;height:34px;background:#e7d8b4;border-radius:8px;padding:5px 6px;border:1px solid #cdbf9c;}
+  .bar{flex:1;background:var(--teal);border-radius:1px;min-height:1px;height:1px;transition:height .35s ease;}
+  .ctrl{margin-top:15px;display:flex;gap:8px;}
+  input#feedin{flex:1;font-family:'VT323',monospace;font-size:18px;background:#fbf4e2;border:2px solid var(--rim);
+    border-radius:11px;padding:9px 11px;color:var(--ink);outline:none;min-width:0;}
+  input#feedin:focus{border-color:var(--coral);}
+  .btn{font-family:'Silkscreen',monospace;font-size:10px;letter-spacing:.5px;border:2px solid var(--rim);border-radius:11px;
+    padding:0 13px;cursor:pointer;background:linear-gradient(180deg,#fff3d8,#ecd9ac);color:#5c4420;transition:transform .07s;}
+  .btn:hover{background:linear-gradient(180deg,#fff,#f1e0b6);}
+  .btn:active{transform:translateY(2px);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn.feed{background:linear-gradient(180deg,#f6a667,var(--coral));color:#fff;border-color:#c95a25;}
+  .row{display:flex;gap:8px;margin-top:8px;}
+  .row .btn{flex:1;padding:10px 0;}
+  .hint{font-family:'VT323',monospace;font-size:16px;color:var(--screenrim);text-align:center;margin-top:8px;min-height:20px;}
+  .toggle{text-align:center;margin-top:10px;}
+  .toggle button{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;text-decoration:underline;font-family:inherit;}
+  .hood{margin-top:11px;font-family:'VT323',monospace;font-size:16px;color:var(--teal);background:#f0e7cf;
+    border:1px dashed var(--rim);border-radius:9px;padding:8px 10px;line-height:1.3;display:none;}
+  .hood.on{display:block;}
+
+  /* page content */
+  section.copy{margin-top:46px;}
+  section.copy h2{font-family:'Silkscreen',monospace;font-size:13px;letter-spacing:1px;color:#7a5e2a;
+    text-transform:uppercase;margin:0 0 16px;}
+  .beats{display:grid;gap:18px;}
+  @media(min-width:620px){.beats{grid-template-columns:repeat(3,1fr);}}
+  .beat{background:rgba(255,250,238,.6);border:1px solid var(--rim);border-radius:14px;padding:16px 16px 18px;}
+  .beat h3{margin:0 0 6px;font-size:16px;}
+  .beat p{margin:0;font-size:14.5px;color:#4a4636;}
+  .howto{display:grid;gap:12px;margin-top:4px;}
+  .step{display:flex;gap:12px;align-items:baseline;}
+  .step .k{font-family:'Silkscreen',monospace;font-size:11px;color:var(--coral);min-width:54px;}
+  .step p{margin:0;font-size:14.5px;color:#4a4636;}
+  .note{margin-top:18px;font-size:13.5px;color:var(--muted);}
+  footer{max-width:760px;margin:0 auto;padding:30px 18px 50px;text-align:center;color:var(--muted);font-size:13px;}
+  footer a{color:var(--teal);}
+  .priv{font-family:'VT323',monospace;font-size:17px;color:var(--teal);margin-bottom:8px;}
+  a{color:var(--teal);}
+  :focus-visible{outline:3px solid var(--coral);outline-offset:2px;}
+  @media(prefers-reduced-motion:reduce){.fill,.bar{transition:none;}}
+</style>
+</head>
+<body>
+<header class="site">
+  <h1 class="wordmark">MINDLING</h1>
+  <p class="tagline">a mind you raise from scratch</p>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="device" role="application" aria-label="Mindling — a neural network you raise by talking to it">
+      <div class="plate"><b>MINDLING</b><span class="dot" aria-hidden="true"></span></div>
+      <div class="screen">
+        <div class="scan" aria-hidden="true"></div>
+        <div class="stagebar"><span id="stageLabel">egg · incubating</span><span id="moodLabel">incubating</span></div>
+        <canvas id="pet" width="40" height="40" aria-label="your creature"></canvas>
+        <div class="bubble" id="bubble" aria-live="polite">feed it words to wake it</div>
+      </div>
+      <div class="vit">
+        <div>
+          <div class="cap">Understanding <span id="undPct">0</span>%</div>
+          <div class="meter"><div class="fill" id="undFill"></div></div>
+        </div>
+        <div>
+          <div class="cap">Sense of your language</div>
+          <div class="freq" id="freq" aria-hidden="true"></div>
+        </div>
+      </div>
+      <div class="ctrl">
+        <input id="feedin" type="text" placeholder="say something to it…" aria-label="words to feed your creature" autocomplete="off" />
+        <button class="btn feed" id="btnFeed">FEED</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="btnRest">REST</button>
+        <button class="btn" id="btnPlay" disabled>PLAY</button>
+      </div>
+      <div class="hint" id="hint">feed it words. it hatches into who your words make it.</div>
+      <div class="toggle"><button id="hoodBtn">show the machine</button></div>
+      <div class="hood" id="hood"></div>
+    </div>
+  </div>
+
+  <section class="copy">
+    <h2>What is this?</h2>
+    <div class="beats">
+      <div class="beat">
+        <h3>It's a real neural network</h3>
+        <p>Every Mindling is a small character-level net training live in your browser. Nothing is scripted — the babble is genuinely what the model predicts, one letter at a time.</p>
+      </div>
+      <div class="beat">
+        <h3>It learns you</h3>
+        <p>It only ever learns from what you type to it. Two people grow completely different creatures. It even hatches into a shape and colour seeded by your own first words.</p>
+      </div>
+      <div class="beat">
+        <h3>It has a life</h3>
+        <p>It begins as an egg, hatches once it's learned enough, and grows sharper the more you raise it. Come back tomorrow — it remembers everything you taught it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="copy">
+    <h2>How to raise it</h2>
+    <div class="howto">
+      <div class="step"><span class="k">FEED</span><p>Give it your words. It trains on every letter — the more you talk to it, the more it sounds like language, then like you.</p></div>
+      <div class="step"><span class="k">REST</span><p>Let it sleep. It consolidates what it's heard so far and wakes up sharper. Use it to help a young one find its voice faster.</p></div>
+      <div class="step"><span class="k">PLAY</span><p>Loosen its tongue. Cranks how adventurous its speech is, so it says stranger, more surprising things.</p></div>
+    </div>
+    <p class="note">Curious how it actually works? Tap <em>show the machine</em> under the creature to watch the live training loss fall and see the net underneath the cute words.</p>
+  </section>
+</main>
+
+<footer>
+  <div class="priv">your mindling lives only in your browser. nothing you type is ever sent anywhere.</div>
+  <div>an experiment in raising a mind · by <a href="https://github.com/happyfaceemoji">happyfaceemoji</a> · <a href="https://ko-fi.com/happyfaceemoji">ko-fi</a></div>
+</footer>
+
+<script>
+"use strict";
+/* ---- the mind: character-level neural net, real gradient descent ---- */
+var ALPHABET = "abcdefghijklmnopqrstuvwxyz .,!?'\n";
+var V = ALPHABET.length, stoi = {}, itos = {};
+for (var i = 0; i < V; i++) { stoi[ALPHABET[i]] = i; itos[i] = ALPHABET[i]; }
+var K = 3, H = 48, DIN = V * K, LR = 0.12, LN_V = Math.log(V);
+
+function clean(s){ s = s.toLowerCase(); var o = ""; for (var i=0;i<s.length;i++){ var c=s[i]; o += (c in stoi) ? c : " "; } return o; }
+function rand(n,s){ var a=new Float64Array(n); for(var i=0;i<n;i++) a[i]=(Math.random()*2-1)*s; return a; }
+function makeModel(){
+  var W1=[],W2=[],j;
+  for(j=0;j<H;j++) W1.push(rand(DIN,Math.sqrt(1/DIN)));
+  for(j=0;j<V;j++) W2.push(rand(H,Math.sqrt(1/H)));
+  return {W1:W1,b1:new Float64Array(H),W2:W2,b2:new Float64Array(V)};
+}
+function forward(m,ctx){
+  var x=new Float64Array(DIN),k,j,i,o;
+  for(k=0;k<K;k++) x[k*V+ctx[k]]=1;
+  var h=new Float64Array(H);
+  for(j=0;j<H;j++){ var s=m.b1[j],w=m.W1[j]; for(i=0;i<DIN;i++) s+=w[i]*x[i]; h[j]=Math.tanh(s); }
+  var logits=new Float64Array(V);
+  for(o=0;o<V;o++){ var s2=m.b2[o],w2=m.W2[o]; for(j=0;j<H;j++) s2+=w2[j]*h[j]; logits[o]=s2; }
+  var mx=-1e9; for(o=0;o<V;o++) if(logits[o]>mx) mx=logits[o];
+  var Z=0,p=new Float64Array(V); for(o=0;o<V;o++){ p[o]=Math.exp(logits[o]-mx); Z+=p[o]; }
+  for(o=0;o<V;o++) p[o]/=Z;
+  return {x:x,h:h,p:p};
+}
+function trainStep(m,ctx,t){
+  var f=forward(m,ctx),x=f.x,h=f.h,p=f.p,o,j,i;
+  var loss=-Math.log(Math.max(p[t],1e-9));
+  p[t]-=1; // dlogits
+  var dh=new Float64Array(H);
+  for(o=0;o<V;o++){ var g=p[o],w=m.W2[o]; for(j=0;j<H;j++){ dh[j]+=w[j]*g; w[j]-=LR*g*h[j]; } m.b2[o]-=LR*g; }
+  for(j=0;j<H;j++){ var dpre=dh[j]*(1-h[j]*h[j]),w1=m.W1[j]; for(i=0;i<DIN;i++) if(x[i]!==0) w1[i]-=LR*dpre*x[i]; m.b1[j]-=LR*dpre; }
+  return loss;
+}
+function sampleNext(m,ctx,temp){
+  var p=forward(m,ctx).p,o,Z=0,q=new Float64Array(V);
+  for(o=0;o<V;o++){ q[o]=Math.exp(Math.log(Math.max(p[o],1e-9))/temp); Z+=q[o]; }
+  var r=Math.random()*Z,c=0;
+  for(o=0;o<V;o++){ c+=q[o]; if(r<=c) return o; }
+  return V-1;
+}
+function babble(m,n,temp){
+  var ctx=[stoi[" "],stoi[" "],stoi[" "]],out="",x;
+  for(var i=0;i<n;i++){ var o=sampleNext(m,ctx,temp); out+=itos[o]; ctx=[ctx[1],ctx[2],o]; }
+  return out.replace(/\n/g," ").replace(/\s+/g," ").trim();
+}
+function trainCorpus(m,corpus,passes,windowChars){
+  var slice=corpus.slice(-windowChars), idx=[];
+  for(var i=0;i<slice.length;i++) idx.push(stoi[slice[i]]);
+  if(idx.length<=K) return null;
+  var last=0,cnt=0;
+  for(var e=0;e<passes;e++){ last=0;cnt=0; for(var j=K;j<idx.length;j++){ last+=trainStep(m,[idx[j-3],idx[j-2],idx[j-1]],idx[j]); cnt++; } }
+  return cnt?last/cnt:null;
+}
+
+/* ---- pixel creature renderer ---- */
+var GRID=40;
+function drawCreature(canvas,st){
+  var ctx=canvas.getContext("2d"); ctx.clearRect(0,0,GRID,GRID);
+  var ink="#2b2a26", reduced=st.reduced, frame=st.frame;
+  var bob=reduced?0:Math.round(Math.sin(frame/6));
+  var cx=20, cy=21+bob;
+  function px(x,y,col){ ctx.fillStyle=col; ctx.fillRect(x,y,1,1); }
+  function disc(ox,oy,rx,ry,col,outline){
+    for(var y=-ry-1;y<=ry+1;y++) for(var x=-rx-1;x<=rx+1;x++){
+      var v=(x*x)/(rx*rx)+(y*y)/(ry*ry);
+      if(v<=1) px(cx+ox+x,cy+oy+y,col);
+      else if(outline&&v<=1.5) px(cx+ox+x,cy+oy+y,ink);
+    }
+  }
+  var body="hsl("+st.hue+" 62% 70%)", bodyLo="hsl("+st.hue+" 55% 60%)", cheek="#e8743b";
+  if(st.stage==="egg"||st.stage==="crack"){
+    var wob=reduced?0:Math.round(Math.sin(frame/4));
+    var shell="#f4ecd6", shellLo="#e6d6ad";
+    for(var y=-13;y<=12;y++) for(var x=-10;x<=10;x++){
+      var ry=y<0?13:12, rx=10-Math.max(0,-y)*0.18;
+      var v=(x*x)/(rx*rx)+(y*y)/(ry*ry);
+      if(v<=1) px(cx+x+wob,cy+y,(y<-2&&x<2)?shell:shellLo);
+      else if(v<=1.35) px(cx+x+wob,cy+y,ink);
+    }
+    px(cx-3+wob,cy-4,"#fff"); px(cx-2+wob,cy-5,"#fff");
+    px(cx+3+wob,cy+2,"#d8c38f"); px(cx-4+wob,cy+5,"#d8c38f");
+    if(st.stage==="crack"){ var z=[[-1,-6],[0,-4],[-2,-2],[0,0],[-1,2],[1,4],[0,6]]; for(var q=0;q<z.length;q++){ px(cx+z[q][0]+wob,cy+z[q][1],ink); px(cx+z[q][0]+1+wob,cy+z[q][1],ink); } }
+    return;
+  }
+  px(cx-5,cy+9,ink); px(cx-4,cy+9,body); px(cx+4,cy+9,body); px(cx+5,cy+9,ink);
+  disc(0,0,10,9,body,true);
+  for(var x2=-7;x2<=7;x2++) px(cx+x2,cy+7,bodyLo);
+  px(cx,cy-11,ink); px(cx,cy-12,ink); px(cx,cy-13,cheek);
+  var blink=!reduced&&(frame%38<2), sleepy=st.mood==="sleepy";
+  function eye(ox){
+    if(blink||sleepy){ for(var x=-2;x<=2;x++) px(cx+ox+x,cy-1,ink); return; }
+    disc(ox,-2,2,3,"#ffffff",false);
+    var py=-2,pxo=0;
+    if(st.mood==="hyper") pxo=(frame%8<4)?1:-1;
+    if(st.mood==="happy") py=-3;
+    px(cx+ox+pxo,cy+py,ink); px(cx+ox+pxo,cy+py+1,ink);
+    px(cx+ox+pxo+1,cy+py,ink); px(cx+ox+pxo+1,cy+py+1,ink);
+    px(cx+ox-1,cy-4,"#ffffff");
+  }
+  eye(-4); eye(4);
+  if(st.mood==="happy"||st.mood==="hyper"){ px(cx-7,cy+2,cheek); px(cx-8,cy+2,cheek); px(cx+7,cy+2,cheek); px(cx+8,cy+2,cheek); }
+  if(st.mood==="happy"){ px(cx-1,cy+3,ink); px(cx,cy+4,ink); px(cx+1,cy+3,ink); }
+  else if(st.mood==="hyper"){ for(var x3=-2;x3<=2;x3++) px(cx+x3,cy+3,ink); px(cx-2,cy+4,ink); px(cx+2,cy+4,ink); }
+  else if(st.mood==="hungry"){ px(cx,cy+3,ink); px(cx,cy+4,ink); px(cx-1,cy+4,ink); px(cx+1,cy+4,ink); }
+  else { px(cx-1,cy+3,ink); px(cx,cy+3,ink); px(cx+1,cy+3,ink); }
+}
+
+/* ---- state + persistence ---- */
+var SAVE_KEY="mindling.v1";
+var S={ model:makeModel(), corpus:"", stage:"egg", hue:40, steps:0, loss:LN_V,
+        bornAt:Date.now(), hatchedAt:null, lastFed:Date.now(), temp:0.7, mood:"incubating" };
+var frame=0, busy=null;
+var HATCH_CHARS=55;
+var reduced=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function save(){
+  try{
+    var m=S.model;
+    var data={ v:1, corpus:S.corpus, stage:S.stage, hue:S.hue, steps:S.steps, loss:S.loss,
+      bornAt:S.bornAt, hatchedAt:S.hatchedAt,
+      W1:m.W1.map(function(a){return Array.from(a);}), b1:Array.from(m.b1),
+      W2:m.W2.map(function(a){return Array.from(a);}), b2:Array.from(m.b2) };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+function load(){
+  try{
+    var raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
+    var d=JSON.parse(raw); if(!d||d.v!==1) return false;
+    if(!d.W1||d.W1.length!==H||d.W1[0].length!==DIN) return false;
+    S.corpus=d.corpus||""; S.stage=d.stage||"egg"; S.hue=d.hue||40; S.steps=d.steps||0;
+    S.loss=(typeof d.loss==="number")?d.loss:LN_V; S.bornAt=d.bornAt||Date.now(); S.hatchedAt=d.hatchedAt||null;
+    var m=S.model;
+    for(var j=0;j<H;j++){ for(var i=0;i<DIN;i++) m.W1[j][i]=d.W1[j][i]; m.b1[j]=d.b1[j]; }
+    for(var o=0;o<V;o++){ for(var k=0;k<H;k++) m.W2[o][k]=d.W2[o][k]; m.b2[o]=d.b2[o]; }
+    return true;
+  }catch(e){ return false; }
+}
+var saveTimer=null;
+function queueSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(save,600); }
+
+/* ---- dom ---- */
+var $=function(id){return document.getElementById(id);};
+var els={ stage:$("stageLabel"), mood:$("moodLabel"), pet:$("pet"), bubble:$("bubble"),
+  undPct:$("undPct"), undFill:$("undFill"), freq:$("freq"), feedin:$("feedin"),
+  feed:$("btnFeed"), rest:$("btnRest"), play:$("btnPlay"), hint:$("hint"),
+  hoodBtn:$("hoodBtn"), hood:$("hood") };
+
+// build freq bars
+var freqBars=[];
+for(var fb=0;fb<27;fb++){ var b=document.createElement("div"); b.className="bar"; els.freq.appendChild(b); freqBars.push(b); }
+
+function ageText(){
+  if(S.stage==="egg"||S.stage==="crack") return "egg · incubating";
+  var t=S.hatchedAt||S.bornAt, ms=Date.now()-t, mins=ms/60000;
+  if(mins<1) return "just hatched";
+  if(mins<60) return "alive · "+Math.floor(mins)+"m";
+  var hrs=mins/60; if(hrs<24) return "alive · "+Math.floor(hrs)+"h";
+  var days=Math.floor(hrs/24); return "alive · "+days+(days===1?" day":" days");
+}
+function understanding(){ return Math.max(0,Math.min(100,Math.round(((LN_V-S.loss)/(LN_V-0.35))*100))); }
+
+function render(){
+  els.stage.textContent=ageText();
+  els.mood.textContent=S.stage==="creature"?S.mood:"incubating";
+  var u=understanding(); els.undPct.textContent=u; els.undFill.style.width=u+"%";
+  // freq
+  var f=new Array(V).fill(0), c=S.corpus;
+  for(var i=0;i<c.length;i++) f[stoi[c[i]]]++;
+  var mx=1; for(var k=0;k<27;k++) if(f[k]>mx) mx=f[k];
+  for(var k2=0;k2<27;k2++) freqBars[k2].style.height=((f[k2]/mx)*100)+"%";
+  // bubble
+  if(S.stage==="creature"){ /* updated by speak() */ }
+  else if(S.stage==="crack"){ els.bubble.textContent="*tk* *tk* *crk!*"; }
+  else { var pct=Math.min(100,Math.round((S.corpus.length/HATCH_CHARS)*100)); els.bubble.textContent="incubating · "+pct+"% · feed it words to wake it"; }
+  els.play.disabled=(busy!==null)||S.stage!=="creature";
+  els.rest.disabled=(busy!==null)||S.corpus.length<=K;
+  els.feed.disabled=(busy==="rest");
+  // hood
+  if(els.hood.classList.contains("on")){
+    els.hood.innerHTML="loss "+S.loss.toFixed(3)+" (start "+LN_V.toFixed(2)+") · steps "+S.steps.toLocaleString()+"<br>"+
+      "chars seen "+S.corpus.length+" · temperature "+S.temp.toFixed(2)+"<br>"+
+      "char-level net · vocab "+V+" · context "+K+" · "+H+" hidden · softmax<br>"+
+      "<span style='color:#8a7a52'>feed adds data &amp; trains · rest = consolidation epochs · play = sampling temperature</span>";
+  }
+}
+function draw(){ drawCreature(els.pet,{stage:S.stage,mood:S.mood,hue:S.hue,frame:frame,reduced:reduced}); }
+function speak(temp){ if(S.corpus.length<=K) return; els.bubble.textContent=babble(S.model,64,temp)||"…"; }
+
+function hatchIfReady(){
+  if(S.stage==="egg" && S.corpus.length>=HATCH_CHARS){
+    S.stage="crack";
+    var letters=S.corpus.replace(/[^a-z]/g,"");
+    var uniq=new Set(letters.split("")).size;
+    var words=S.corpus.trim().split(/\s+/);
+    var avg=words.reduce(function(a,w){return a+w.length;},0)/Math.max(1,words.length);
+    S.hue=Math.round((uniq*11+avg*23)%360);
+    render(); draw();
+    setTimeout(function(){ S.stage="creature"; S.hatchedAt=Date.now(); S.mood="happy"; speak(0.7); render(); draw(); queueSave(); },1500);
+  }
+}
+
+function feed(){
+  var text=clean(els.feedin.value);
+  if(!text.trim()) return;
+  busy="feed";
+  S.corpus += (S.corpus?" ":"")+text;
+  S.lastFed=Date.now();
+  var l=trainCorpus(S.model,S.corpus,3,600);
+  S.steps += Math.max(0,S.corpus.length-K)*3;
+  if(l!=null) S.loss=S.loss*0.4+l*0.6;
+  els.feedin.value="";
+  hatchIfReady();
+  if(S.stage==="creature") speak(S.temp);
+  render(); draw(); queueSave();
+  setTimeout(function(){ busy=null; render(); },220);
+}
+function rest(){
+  if(S.corpus.length<=K) return;
+  busy="rest"; S.mood="sleepy"; render(); draw();
+  setTimeout(function(){
+    var l=trainCorpus(S.model,S.corpus,14,1200);
+    S.steps += Math.max(0,Math.min(1200,S.corpus.length)-K)*14;
+    if(l!=null) S.loss=S.loss*0.3+l*0.7;
+    hatchIfReady();
+    if(S.stage==="creature") speak(0.55);
+    busy=null; render(); draw(); queueSave();
+  },650);
+}
+function play(){
+  if(S.stage!=="creature") return;
+  busy="play"; S.mood="hyper"; S.temp=1.35; speak(1.35); render(); draw();
+  var n=0, id=setInterval(function(){
+    speak(1.35); n++;
+    if(n>=4){ clearInterval(id); S.temp=0.7; busy=null; S.mood="happy"; render(); draw(); }
+  },600);
+}
+
+// heartbeat: animation + mood drift (no death — it only drifts and recovers)
+setInterval(function(){
+  frame++;
+  if(busy==="play"){ S.mood="hyper"; }
+  else if(S.stage!=="creature"){ S.mood="incubating"; }
+  else if(busy==="rest"){ S.mood="sleepy"; }
+  else {
+    var idle=(Date.now()-S.lastFed)/1000;
+    S.mood = idle>22 ? "hungry" : idle>9 ? "sleepy" : "happy";
+  }
+  draw();
+  if(frame%55===0) render(); // refresh age/labels occasionally
+}, reduced?1000:110);
+
+// wire controls
+els.feed.addEventListener("click",feed);
+els.feedin.addEventListener("keydown",function(e){ if(e.key==="Enter") feed(); });
+els.rest.addEventListener("click",rest);
+els.play.addEventListener("click",play);
+els.hoodBtn.addEventListener("click",function(){
+  els.hood.classList.toggle("on");
+  els.hoodBtn.textContent=els.hood.classList.contains("on")?"hide the machine":"show the machine";
+  render();
+});
+window.addEventListener("beforeunload",save);
+
+// boot
+load();
+if(S.stage==="creature"){ S.mood="happy"; els.hint.textContent="feed = learn · rest = consolidate · play = loosen up"; speak(0.7); }
+render(); draw();
+</script>
+</body>
+</html>
